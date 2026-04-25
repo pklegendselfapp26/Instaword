@@ -1,0 +1,119 @@
+MDScreenManager:
+    ViewDictionaryScreen:
+        name: 'view'
+    AddWordScreen:
+        name: 'add'
+    MCQScreen:
+        name: 'mcq'
+
+<WordCard@MDBoxLayout>:
+    orientation: 'vertical'
+    size_hint_y: None
+    height: dp(100)
+    padding: dp(15)
+    word_text: ""
+    meaning_text: ""
+    canvas.before:
+        Color:
+            rgba: 0.15, 0.15, 0.25, 1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(20),]
+    MDLabel:
+        text: root.word_text
+        bold: True
+        font_style: "H6"
+        theme_text_color: "Primary"
+    MDLabel:
+        text: root.meaning_text
+        theme_text_color: "Secondary"
+        shorten: True
+        shorten_from: "right"
+
+<ViewDictionaryScreen>:
+    MDBoxLayout:
+        orientation: 'vertical'
+        MDTopAppBar:
+            title: "Insta Word"
+            elevation: 4
+            right_action_items: [["plus-circle", lambda x: app.change_screen('add')]]
+        ScrollView:
+            MDBoxLayout:
+                id: words_container
+                orientation: 'vertical'
+                adaptive_height: True
+                padding: dp(15)
+                spacing: dp(15)
+        MDFloatingActionButton:
+            icon: "school"
+            pos_hint: {"center_x": .85, "center_y": .1}
+            on_release: app.change_screen('mcq')
+
+<AddWordScreen>:
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(15)
+        MDTopAppBar:
+            title: "Add New Word"
+            left_action_items: [["arrow-left", lambda x: app.change_screen('view')]]
+        MDTextField:
+            id: word_input
+            hint_text: "Enter Word"
+            mode: "rectangle"
+        MDRaisedButton:
+            text: "FETCH MEANING"
+            pos_hint: {"center_x": .5}
+            on_release: root.magic_fetch()
+        MDTextField:
+            id: meaning_input
+            hint_text: "Meaning"
+            mode: "rectangle"
+            multiline: True
+        MDRaisedButton:
+            text: "SAVE WORD"
+            size_hint_x: 1
+            on_release: root.save_word_to_memory()
+
+<MCQScreen>:
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: dp(15)
+        spacing: dp(10)
+        MDTopAppBar:
+            title: "MCQ Test"
+            left_action_items: [["close", lambda x: app.change_screen('view')]]
+        MDLabel:
+            id: mcq_word_label
+            halign: "center"
+            font_style: "H4"
+            theme_text_color: "Primary"
+        MDIconButton:
+            icon: "volume-high"
+            pos_hint: {"center_x": .5}
+            on_release: root.play_audio()
+        MDBoxLayout:
+            orientation: 'vertical'
+            spacing: dp(10)
+            MDRaisedButton:
+                id: btn1
+                size_hint_x: 1
+                on_release: root.check(self)
+            MDRaisedButton:
+                id: btn2
+                size_hint_x: 1
+                on_release: root.check(self)
+            MDRaisedButton:
+                id: btn3
+                size_hint_x: 1
+                on_release: root.check(self)
+            MDRaisedButton:
+                id: btn4
+                size_hint_x: 1
+                on_release: root.check(self)
+            MDRaisedButton:
+                id: btn5
+                size_hint_x: 1
+                on_release: root.check(self)
+
