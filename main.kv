@@ -1,0 +1,633 @@
+#:kivy 2.0.0
+#:import dp kivy.metrics.dp
+
+MDScreenManager:
+    ViewDictionaryScreen:
+    AddWordScreen:
+    RecycleBinScreen:
+    DashboardScreen:
+    TestMenuScreen:
+    FlashcardScreen:
+    MCQScreen:
+    SettingsScreen:
+
+# --- CUSTOM COMPONENTS ---
+
+<WordCard@MDCard>:
+    orientation: "vertical"
+    size_hint_y: None
+    height: self.minimum_height
+    padding: dp(15)
+    spacing: dp(10)
+    elevation: 2
+    radius: [dp(12)]
+    md_bg_color: app.theme_cls.bg_darkest if app.theme_cls.theme_style == "Dark" else app.theme_cls.bg_normal
+
+    word_text: ""
+    category_text: ""
+    meaning_text: ""
+    example_text: ""
+    mastery_text: ""
+
+    MDBoxLayout:
+        size_hint_y: None
+        height: dp(30)
+        MDLabel:
+            text: f"[b]{root.word_text}[/b]  [size=14sp][i]({root.category_text})[/i][/size]"
+            markup: True
+            font_style: "H6"
+            theme_text_color: "Primary"
+        MDLabel:
+            text: f"Lvl: {root.mastery_text}"
+            halign: "right"
+            size_hint_x: 0.3
+            theme_text_color: "Secondary"
+
+    MDLabel:
+        text: f"Meaning: {root.meaning_text}"
+        theme_text_color: "Secondary"
+        adaptive_height: True
+
+    MDLabel:
+        text: f"Ex: {root.example_text}"
+        theme_text_color: "Hint"
+        font_style: "Caption"
+        adaptive_height: True
+
+    MDSeparator:
+        height: dp(1)
+
+    MDBoxLayout:
+        size_hint_y: None
+        height: dp(40)
+        spacing: dp(10)
+        MDIconButton:
+            icon: "volume-high"
+            theme_text_color: "Custom"
+            text_color: app.theme_cls.primary_color
+            on_release: app.root.get_screen('view').play_audio(root.word_text)
+        MDIconButton:
+            icon: "web"
+            theme_text_color: "Custom"
+            text_color: 0.2, 0.7, 0.4, 1
+            on_release: app.root.get_screen('view').search_word_web(root.word_text)
+        Widget: 
+        MDIconButton:
+            icon: "pencil"
+            theme_text_color: "Custom"
+            text_color: app.theme_cls.primary_color
+            on_release: app.root.get_screen('view').edit_word(root.word_text)
+        MDIconButton:
+            icon: "trash-can"
+            theme_text_color: "Custom"
+            text_color: 0.8, 0.2, 0.2, 1
+            on_release: app.root.get_screen('view').delete_word_prompt(root.word_text)
+
+<RecycleCard@MDCard>:
+    orientation: "vertical"
+    size_hint_y: None
+    height: dp(120)
+    padding: dp(15)
+    spacing: dp(5)
+    elevation: 1
+    radius: [dp(10)]
+
+    word_text: ""
+    category_text: ""
+    days_left_text: ""
+
+    MDBoxLayout:
+        size_hint_y: None
+        height: dp(30)
+        MDLabel:
+            text: f"[b]{root.word_text}[/b]"
+            markup: True
+            font_style: "Subtitle1"
+        MDLabel:
+            text: root.days_left_text
+            halign: "right"
+            theme_text_color: "Error"
+            font_style: "Caption"
+
+    MDBoxLayout:
+        size_hint_y: None
+        height: dp(40)
+        spacing: dp(10)
+        MDRaisedButton:
+            text: "RESTORE"
+            md_bg_color: 0.2, 0.7, 0.4, 1
+            on_release: app.root.get_screen('recycle_bin').restore_word(root.word_text)
+        MDFlatButton:
+            text: "DELETE FOREVER"
+            theme_text_color: "Error"
+            on_release: app.root.get_screen('recycle_bin').permanent_delete(root.word_text)
+
+# --- SCREENS ---
+
+<ViewDictionaryScreen>:
+    name: "view"
+    MDBoxLayout:
+        orientation: "vertical"
+
+        MDTopAppBar:
+            title: "Insta Word"
+            elevation: 2
+            right_action_items: [["chart-bar", lambda x: app.change_screen("dashboard")], ["trash-can", lambda x: app.change_screen("recycle_bin")], ["cog", lambda x: app.change_screen("settings")]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: dp(10)
+            spacing: dp(10)
+
+            MDBoxLayout:
+                size_hint_y: None
+                height: dp(45)
+                spacing: dp(10)
+                MDRaisedButton:
+                    text: "+ ADD"
+                    size_hint_x: 0.33
+                    on_release: app.change_screen("add")
+                MDRaisedButton:
+                    text: "STUDY"
+                    size_hint_x: 0.33
+                    md_bg_color: 0.8, 0.5, 0.1, 1 
+                    on_release: app.change_screen("test_menu")
+                MDRaisedButton:
+                    text: "WEB"
+                    size_hint_x: 0.33
+                    md_bg_color: 0.2, 0.7, 0.4, 1 
+                    on_release: root.open_web_search()
+
+            MDBoxLayout:
+                size_hint_y: None
+                height: dp(50)
+                spacing: dp(10)
+                MDTextField:
+                    id: search_input
+                    hint_text: "Search words..."
+                    icon_right: "magnify"
+                    on_text: root.refresh_list()
+                Spinner:
+                    id: sort_spinner
+                    text: "Latest"
+                    values: ["Latest", "Alphabetical"]
+                    size_hint_x: 0.4
+                    background_color: app.theme_cls.primary_color
+                    color: 1,1,1,1
+                    on_text: root.refresh_list()
+                    
+            ScrollView:
+                size_hint_y: None
+                height: dp(40)
+                do_scroll_y: False
+                MDBoxLayout:
+                    adaptive_width: True
+                    spacing: dp(10)
+                    padding: dp(5)
+                    MDRoundFlatButton:
+                        text: "All"
+                        text_color: app.theme_cls.primary_color if root.active_filter == "All" else app.theme_cls.disabled_hint_text_color
+                        on_release: root.set_filter("All")
+                    MDRoundFlatButton:
+                        text: "Struggling"
+                        text_color: (0.8, 0.2, 0.2, 1) if root.active_filter == "Struggling" else app.theme_cls.disabled_hint_text_color
+                        on_release: root.set_filter("Struggling")
+                    MDRoundFlatButton:
+                        text: "Noun"
+                        text_color: app.theme_cls.primary_color if root.active_filter == "Noun" else app.theme_cls.disabled_hint_text_color
+                        on_release: root.set_filter("Noun")
+                    MDRoundFlatButton:
+                        text: "Verb"
+                        text_color: app.theme_cls.primary_color if root.active_filter == "Verb" else app.theme_cls.disabled_hint_text_color
+                        on_release: root.set_filter("Verb")
+                    MDRoundFlatButton:
+                        text: "Adjective"
+                        text_color: app.theme_cls.primary_color if root.active_filter == "Adjective" else app.theme_cls.disabled_hint_text_color
+                        on_release: root.set_filter("Adjective")
+
+            MDLabel:
+                id: streak_label
+                text: "Streak: 0 Days"
+                theme_text_color: "Custom"
+                text_color: 0.9, 0.5, 0.1, 1
+                font_style: "Subtitle2"
+                size_hint_y: None
+                height: dp(20)
+
+            ScrollView:
+                MDBoxLayout:
+                    id: words_container
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: self.minimum_height
+                    spacing: dp(12)
+                    padding: dp(5)
+
+<RecycleBinScreen>:
+    name: "recycle_bin"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            title: "Recycle Bin"
+            left_action_items: [["arrow-left", lambda x: app.change_screen("view", "right")]]
+            right_action_items: [["delete-empty", lambda x: root.empty_bin()]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: dp(15)
+            spacing: dp(10)
+            MDLabel:
+                text: "Words are kept here for 30 days."
+                theme_text_color: "Secondary"
+                halign: "center"
+                size_hint_y: None
+                height: dp(30)
+
+            ScrollView:
+                MDBoxLayout:
+                    id: bin_container
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: self.minimum_height
+                    spacing: dp(10)
+
+<DashboardScreen>:
+    name: "dashboard"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            title: "Analytics"
+            left_action_items: [["arrow-left", lambda x: app.change_screen("view", "right")]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: dp(30)
+            spacing: dp(20)
+            
+            MDCard:
+                orientation: "vertical"
+                padding: dp(20)
+                spacing: dp(15)
+                elevation: 2
+                radius: [dp(15)]
+                size_hint_y: 0.8
+                
+                MDLabel:
+                    text: "Total Words Saved"
+                    theme_text_color: "Secondary"
+                MDLabel:
+                    text: root.total_words
+                    font_style: "H4"
+                
+                MDSeparator:
+                
+                MDLabel:
+                    text: "Mastered (Lvl 3+)"
+                    theme_text_color: "Custom"
+                    text_color: 0.2, 0.8, 0.2, 1
+                MDLabel:
+                    text: root.mastered
+                    font_style: "H5"
+
+                MDSeparator:
+
+                MDLabel:
+                    text: "Struggling (Lvl < 0)"
+                    theme_text_color: "Error"
+                MDLabel:
+                    text: root.struggling
+                    font_style: "H5"
+                    
+                MDSeparator:
+
+                MDLabel:
+                    text: "Best Streak"
+                    theme_text_color: "Custom"
+                    text_color: 0.9, 0.5, 0.1, 1
+                MDLabel:
+                    text: f"{root.streak_best} Days"
+                    font_style: "H5"
+            Widget:
+
+<AddWordScreen>:
+    name: "add"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            title: "Add / Edit Word"
+            left_action_items: [["arrow-left", lambda x: (root.clear_inputs(), app.change_screen("view", "right"))]]
+            right_action_items: [["check", lambda x: root.save_word_to_memory()]]
+
+        ScrollView:
+            MDBoxLayout:
+                orientation: "vertical"
+                padding: dp(20)
+                spacing: dp(20)
+                size_hint_y: None
+                height: self.minimum_height 
+
+                MDBoxLayout:
+                    size_hint_y: None
+                    height: dp(60)
+                    spacing: dp(10)
+                    MDTextField:
+                        id: word_input
+                        hint_text: "Word"
+                        mode: "rectangle"
+                        size_hint_x: 0.85
+                    MDIconButton:
+                        icon: "auto-fix" 
+                        theme_text_color: "Custom"
+                        text_color: 0.6, 0.2, 0.8, 1
+                        icon_size: "36sp"
+                        on_release: root.magic_fetch()
+
+                Spinner:
+                    id: category_spinner
+                    text: "Uncategorized"
+                    values: ["Noun", "Pronoun", "Verb", "Adjective", "Adverb", "Preposition", "Conjunction", "Phrase", "Uncategorized"]
+                    size_hint_y: None
+                    height: dp(50)
+                    background_color: app.theme_cls.primary_color
+                    color: 1, 1, 1, 1
+
+                MDTextField:
+                    id: meaning_input
+                    hint_text: "Meaning"
+                    mode: "rectangle"
+                    multiline: True
+
+                MDTextField:
+                    id: example_input
+                    hint_text: "Example Sentence"
+                    mode: "rectangle"
+                    multiline: True
+                    
+                MDRaisedButton:
+                    text: "SAVE WORD"
+                    size_hint_x: 1
+                    on_release: root.save_word_to_memory()
+
+<SettingsScreen>:
+    name: "settings"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            title: "Settings"
+            left_action_items: [["arrow-left", lambda x: app.change_screen("view", "right")]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: dp(30)
+            spacing: dp(20)
+            
+            MDLabel:
+                text: "Theme"
+                font_style: "H6"
+                size_hint_y: None
+                height: dp(20)
+
+            ScrollView:
+                size_hint_y: None
+                height: dp(220)
+                MDBoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: self.minimum_height
+                    spacing: dp(10)
+                    
+                    MDRaisedButton:
+                        text: "White (Sadabahar)"
+                        size_hint_x: 1
+                        md_bg_color: 0.9, 0.9, 0.9, 1
+                        text_color: 0.1, 0.4, 0.8, 1
+                        on_release: app.change_theme("White (Sadabahar)")
+                    MDRaisedButton:
+                        text: "Dark"
+                        size_hint_x: 1
+                        md_bg_color: 0.2, 0.1, 0.3, 1
+                        on_release: app.change_theme("Dark")
+                    MDRaisedButton:
+                        text: "Police"
+                        size_hint_x: 1
+                        md_bg_color: 0.1, 0.2, 0.5, 1
+                        on_release: app.change_theme("Police")
+                    MDRaisedButton:
+                        text: "Cool & Composed"
+                        size_hint_x: 1
+                        md_bg_color: 0.8, 0.95, 0.95, 1
+                        text_color: 0.1, 0.5, 0.5, 1
+                        on_release: app.change_theme("Cool & Composed")
+                    MDRaisedButton:
+                        text: "R E A L E L"
+                        size_hint_x: 1
+                        md_bg_color: 0.8, 0.4, 0.1, 1
+                        on_release: app.change_theme("R E A L E L")
+
+            MDSeparator:
+
+            MDLabel:
+                text: "Data Backup (CSV)"
+                font_style: "H6"
+                size_hint_y: None
+                height: dp(30)
+
+            MDRaisedButton:
+                text: "Export Dictionary"
+                icon: "export"
+                size_hint_x: 1
+                md_bg_color: 0.2, 0.7, 0.4, 1
+                on_release: root.export_csv()
+                 
+            MDRaisedButton:
+                text: "Import Dictionary"
+                icon: "import"
+                size_hint_x: 1
+                md_bg_color: 0.8, 0.5, 0.1, 1
+                on_release: root.import_csv()
+
+            Widget:
+
+<TestMenuScreen>:
+    name: "test_menu"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            title: "Study Mode"
+            left_action_items: [["arrow-left", lambda x: app.change_screen("view", "right")]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: dp(40)
+            spacing: dp(30)
+
+            MDFillRoundFlatIconButton:
+                text: "Flashcards"
+                icon: "cards"
+                size_hint_x: 1
+                font_size: "20sp"
+                on_release: app.change_screen("flashcard")
+
+            MDFillRoundFlatIconButton:
+                text: "MCQ Mastery Test"
+                icon: "format-list-checks"
+                size_hint_x: 1
+                font_size: "20sp"
+                md_bg_color: 0.8, 0.5, 0.1, 1 
+                on_release: root.check_mcq_unlocked()
+
+            Widget:
+
+<FlashcardScreen>:
+    name: "flashcard"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            title: "Flashcards"
+            left_action_items: [["close", lambda x: app.change_screen("test_menu", "right")]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: dp(30)
+            
+            MDCard:
+                orientation: "vertical"
+                padding: dp(20)
+                elevation: 3
+                radius: [dp(20)]
+                
+                MDLabel:
+                    id: test_word_label
+                    text: "Word"
+                    font_style: "H3"
+                    halign: "center"
+                    size_hint_y: 0.4
+                    
+                MDIconButton:
+                    icon: "volume-high"
+                    pos_hint: {"center_x": .5}
+                    on_release: root.play_audio()
+
+                MDSeparator:
+
+                MDLabel:
+                    id: test_meaning_label
+                    text: "?"
+                    font_style: "H6"
+                    halign: "center"
+                    theme_text_color: "Secondary"
+                    size_hint_y: 0.6
+
+            MDBoxLayout:
+                size_hint_y: None
+                height: dp(80)
+                padding: dp(15)
+                spacing: dp(15)
+                MDRaisedButton:
+                    id: reveal_btn
+                    text: "REVEAL"
+                    size_hint_x: 0.5
+                    on_release: root.reveal_meaning()
+                MDRaisedButton:
+                    text: "NEXT"
+                    size_hint_x: 0.5
+                    md_bg_color: 0.2, 0.7, 0.4, 1
+                    on_release: root.next_word()
+
+<MCQScreen>:
+    name: "mcq_test"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            title: "MCQ Test"
+            left_action_items: [["close", lambda x: app.change_screen("test_menu", "right")]]
+            right_action_items: [["volume-high", lambda x: root.play_audio()]]
+
+        MDBoxLayout:
+            orientation: "vertical"
+            padding: dp(15)
+            spacing: dp(10)
+
+            MDLabel:
+                id: mcq_word_label
+                text: "Loading..."
+                font_style: "H5"
+                halign: "center"
+                size_hint_y: 0.15
+
+            MDLabel:
+                id: feedback_label
+                text: "Choose the correct meaning:"
+                theme_text_color: "Secondary"
+                halign: "center"
+                size_hint_y: 0.05
+
+            ScrollView:
+                MDBoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: self.minimum_height
+                    spacing: dp(15)
+                    
+                    MDRaisedButton:
+                        id: btn1
+                        text: "Opt 1"
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: dp(90)
+                        text_size: self.width - dp(20), None
+                        halign: "center"
+                        valign: "center"
+                        on_release: root.check_answer(self)
+                        
+                    MDRaisedButton:
+                        id: btn2
+                        text: "Opt 2"
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: dp(90)
+                        text_size: self.width - dp(20), None
+                        halign: "center"
+                        valign: "center"
+                        on_release: root.check_answer(self)
+                        
+                    MDRaisedButton:
+                        id: btn3
+                        text: "Opt 3"
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: dp(90)
+                        text_size: self.width - dp(20), None
+                        halign: "center"
+                        valign: "center"
+                        on_release: root.check_answer(self)
+                        
+                    MDRaisedButton:
+                        id: btn4
+                        text: "Opt 4"
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: dp(90)
+                        text_size: self.width - dp(20), None
+                        halign: "center"
+                        valign: "center"
+                        on_release: root.check_answer(self)
+                        
+                    MDRaisedButton:
+                        id: btn5
+                        text: "Opt 5"
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: dp(90)
+                        text_size: self.width - dp(20), None
+                        halign: "center"
+                        valign: "center"
+                        on_release: root.check_answer(self)
+
+            MDRaisedButton:
+                id: next_btn
+                text: "NEXT QUESTION"
+                size_hint_x: 1
+                disabled: True
+                md_bg_color: 0.2, 0.7, 0.4, 1
+                on_release: root.next_question()
